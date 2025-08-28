@@ -42,7 +42,8 @@ class Congruences(ABC):
             current_seed = (self.a * current_seed + self.c) % self.m
             period += 1
         return period
-    
+
+# Clase congruencia Lineal
 class LinealCongruence(Congruences):
     
     def __init__(self, xo_seed, k, c, g):
@@ -87,10 +88,11 @@ class LinealCongruence(Congruences):
 
         return cond1 and cond2 and cond3
     
+# Clase de congruencia Aditiva
 class AditiveCongruence(LinealCongruence):
     
     def __init__(self, xo_seed,c, g):
-        super().__init__(xo_seed, 0, c, g)
+        super().__init__(xo_seed,0, c, g)
         self.a = 1
         self.c = c
     
@@ -100,5 +102,18 @@ class AditiveCongruence(LinealCongruence):
         #verifica que c y m sean primos relativos
         import math
         return math.gcd(self.c, self.m) == 1
+
+# Clase de congruencia multiplicativa
+class MultipyCongruence(LinealCongruence):
+    
+    def __init__(self, xo_seed,k, g):
+        super().__init__(xo_seed, k, 0, g)
+        self.c=0
+    
+    
+    #Valida si los parametros cumplen con el teorema de Hull-Dobell aditive=o
+    def hull_dobell_validation(self):
+         # a % 8 == 3 for m = 2^g
+        return self.a % 8 == 3
 
     

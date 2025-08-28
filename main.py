@@ -1,4 +1,4 @@
-from random_numbers.generators.congruences.Congruences import AditiveCongruence
+from generators.congruences.Congruences import AditiveCongruence
 
 lcg = AditiveCongruence(xo_seed=5, c=3, g=5)  # Ejemplo de inicialización
 
