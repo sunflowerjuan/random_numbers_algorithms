@@ -1,6 +1,6 @@
 from LinealCongruence import LinealCongruence
 
-lcg = LinealCongruence(seed=5, k=3, c=7, g=5)
+lcg = LinealCongruence(seed=7, k=2, c=3, g=4)
 
 print("Hull-Dobell Validation:", lcg.hull_dobell_validation())
 

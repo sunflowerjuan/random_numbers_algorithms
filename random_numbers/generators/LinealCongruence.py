@@ -1,30 +1,24 @@
 import math
 
-from decimal import Decimal, ROUND_DOWN
+from Congruences import Congruences
 
-class LinealCongruence:
-    def __init__(self, seed, k, c, g):
-        self.seed = seed
-        self.a = 1+2*k
+class LinealCongruence(Congruences):
+    
+    def __init__(self, xo_seed, k, c, g):
+        super().__init__(xo_seed, g)
+        self.a = 1 + 2 * k
         self.c = c
-        self.m = int(math.pow(2, g))
         
     # Genera la siguiente semilla y retorna un número Ri
     def next(self):
         # Toma la semilla actual y genera el siguiente número pseudoaleatorio
-        self.seed = (self.a * self.seed + self.c) % self.m
+        self.xo_seed = (self.a * self.xo_seed + self.c) % self.m
         # Calcula Ri y lo retorna con 5 decimales
-        ri=Decimal(self.seed / (self.m-1))
+        ri=self.xo_seed / (self.m-1)
         ri_trucated =math.trunc(ri * 10**5) / 10**5
         return  ri_trucated
     
-    # Genera la secuencia de numeros pseudoaleatorios Ri con un parametro n (Tamaño de la secuencia)
-    def generate_sequence(self, n):
-        sequence = []
-        for _ in range(n):
-            sequence.append(self.next())
-        return sequence
-    
+
     # Valida si los parametros cumplen con el teorema de Hull-Dobell
     def hull_dobell_validation(self):
         # 1. c y m primos relativos
@@ -52,18 +46,5 @@ class LinealCongruence:
 
         return cond1 and cond2 and cond3
     
-    # Calcula el periodo del generador
-    def get_period(self):
-        if self.hull_dobell_validation():
-            return self.m  # Periodo máximo
 
-        seen = {}
-        current_seed = self.seed
-        period = 0
-        # detecta cuando la secuencia comienza a repetirse
-        while current_seed not in seen:
-            seen[current_seed] = period
-            current_seed = (self.a * current_seed + self.c) % self.m
-            period += 1
-        return period
     
