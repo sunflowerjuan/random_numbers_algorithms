@@ -8,16 +8,15 @@ class LinealCongruence:
         self.a = 1+2*k
         self.c = c
         self.m = int(math.pow(2, g))
-        print ("m:", self.m)
         
     # Genera la siguiente semilla y retorna un número Ri
     def next(self):
         # Toma la semilla actual y genera el siguiente número pseudoaleatorio
         self.seed = (self.a * self.seed + self.c) % self.m
-        print(f"Next seed: {self.seed}")
         # Calcula Ri y lo retorna con 5 decimales
         ri=Decimal(self.seed / (self.m-1))
-        return  ri.quantize(Decimal("0.00001"), rounding=ROUND_DOWN)
+        ri_trucated =math.trunc(ri * 10**5) / 10**5
+        return  ri_trucated
     
     # Genera la secuencia de numeros pseudoaleatorios Ri con un parametro n (Tamaño de la secuencia)
     def generate_sequence(self, n):
@@ -52,4 +51,19 @@ class LinealCongruence:
             cond3 = a_minus_1 % 4 == 0
 
         return cond1 and cond2 and cond3
+    
+    # Calcula el periodo del generador
+    def get_period(self):
+        if self.hull_dobell_validation():
+            return self.m  # Periodo máximo
+
+        seen = {}
+        current_seed = self.seed
+        period = 0
+        # detecta cuando la secuencia comienza a repetirse
+        while current_seed not in seen:
+            seen[current_seed] = period
+            current_seed = (self.a * current_seed + self.c) % self.m
+            period += 1
+        return period
     
