@@ -3,7 +3,7 @@ from tkinter import messagebox, filedialog
 import matplotlib.pyplot as plt
 import csv
 
-from LinealCongruence import LinealCongruence  # tu clase en otro archivo
+from random_numbers.generators.congruences import LinealCongruence  # tu clase en otro archivo
 
 
 class LinealCongruenceUI:
