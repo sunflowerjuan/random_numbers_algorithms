@@ -33,10 +33,10 @@ pip install matplotlib pandas numpy
 git clone https://github.com/sunflowerjuan/random_numbers_algorithms
 ```
 
-2. Ingresa al directorio root del proyecto:
+2. Ingresa al directorio del proyecto:
 
 ```bash
-cd random_numbers_algorithms
+cd random_numbers_algorithms/distributions
 ```
 
 3. Ejecuta la aplicación gráfica:
