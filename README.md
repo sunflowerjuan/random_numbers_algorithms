@@ -27,6 +27,8 @@ pip install matplotlib pandas numpy
 
 ### Cómo correr el simulador
 
+En la consola de comandos
+
 1. Clona el repositorio:
 
 ```bash
