@@ -2,7 +2,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from generators.congruences.Congruences import LinealCongruence
+from generators.Congruences import LinealCongruence
 
 import math
 
@@ -20,4 +20,4 @@ class ExponentialDistribution:
         sequence = self.lcg.generate_sequence(self.n)
         #secuencia de numeros exponenciales con la formula de transformacion inversa
         exponential_sequence = [- (1 / self.rate) * math.log(1 - u) for u in sequence]
-        return exponential_sequence
+        return  sequence,exponential_sequence

@@ -7,21 +7,61 @@ This project provides implementations of various random number generators. It is
 - `random_numbers/`
   - `generators/` — Contains different random number generator implementations.
 
-## Features
+## Exponential Distribution Simulator
 
-- Multiple random number generation algorithms.
-- Easy to extend with new generators.
-- Well-organized codebase for maintainability.
+El proyecto incluye un simulador de la distribución exponencial implementado en [ExponentialDistribution.py](distributions/ExponentialDistribution.py)
+y su interfaz gráfica en [ExponentialSimulador.py.](distributions/ExponentialSimulator.py)
 
-## Getting Started
+### Requisitos
 
-1. Clone the repository.
-2. Explore the `random_numbers/generators/` directory for available algorithms.
-3. Integrate the desired generator into your project.
+Antes de ejecutar el simulador, asegúrate de tener instalado, Python 3.8+ con las siguientes librerias
 
-## Usage
+- matplotlib
+- pandas
+- numpy
+  que puede instalar con el siguiente comando
 
-Import and use the generator of your choice from the `generators` module.
+```
+pip install matplotlib pandas numpy
+```
+
+### Cómo correr el simulador
+
+1. Clona el repositorio:
+
+```bash
+git clone https://github.com/sunflowerjuan/random_numbers_algorithms
+```
+
+2. Ingresa al directorio root del proyecto:
+
+```bash
+cd random_numbers_algorithms
+```
+
+3. Ejecuta la aplicación gráfica:
+
+```bash
+python ExponentialSimulator.py
+```
+
+4. En la interfaz del simulador:
+
+- Ingresa la semilla (Seed).
+
+- Define el valor de λ (tasa).
+
+- Indica la cantidad n de números a generar.
+
+- Haz clic en Generar.
+
+Verás:
+
+- Una tabla con los valores 𝑅𝑖 y 𝑁𝑖
+
+- Un histograma con la curva teórica de la distribución exponencial.
+
+Opcionalmente, puedes exportar los datos a CSV.
 
 ## License
 

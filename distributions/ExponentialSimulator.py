@@ -40,9 +40,10 @@ class ExponentialApp:
         tk.Button(frame_left, text="Generar", command=self.run_simulation).pack(pady=5, fill="x")
         tk.Button(frame_left, text="Exportar CSV", command=self.export_csv).pack(pady=5, fill="x")
 
-        # Tabla
-        self.tree = ttk.Treeview(frame_left, columns=("Index", "Ni"), show="headings", height=10)
+        # Tabla (agregamos columna Ri)
+        self.tree = ttk.Treeview(frame_left, columns=("Index", "Ri", "Ni"), show="headings", height=10)
         self.tree.heading("Index", text="Index")
+        self.tree.heading("Ri", text="Ri")
         self.tree.heading("Ni", text="Ni")
         self.tree.pack(pady=10, fill="both", expand=True)
 
@@ -61,11 +62,12 @@ class ExponentialApp:
                 return
 
             exp_gen = ExponentialDistribution(rate, seed, n)
-            ni_values = exp_gen.generate_exponential()
+            ri_values, ni_values = exp_gen.generate_exponential()
 
             # Guardar en DataFrame
             self.data = pd.DataFrame({
                 "Index": range(1, n + 1),
+                "Ri": ri_values,
                 "Ni": ni_values
             })
 
@@ -73,7 +75,9 @@ class ExponentialApp:
             for i in self.tree.get_children():
                 self.tree.delete(i)
             for _, row in self.data.iterrows():
-                self.tree.insert("", "end", values=(row["Index"], f"{row['Ni']:.4f}"))
+                self.tree.insert("", "end", values=(
+                    row["Index"], f"{row['Ri']:.4f}", f"{row['Ni']:.4f}"
+                ))
 
             # Dibujar gráfica
             self.plot_histogram(rate, ni_values)
@@ -101,6 +105,7 @@ class ExponentialApp:
         canvas = FigureCanvasTkAgg(fig, master=self.frame_right)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
 
     def export_csv(self):
         if self.data is None:

@@ -29,19 +29,8 @@ class Congruences(ABC):
         return sequence
     
     # Calcula el periodo del generador
-    def get_period(self):
-        if self.hull_dobell_validation():
-            return self.m  # Periodo máximo
 
-        seen = {}
-        current_seed = self.xo_seed
-        period = 0
-        # detecta cuando la secuencia comienza a repetirse
-        while current_seed not in seen:
-            seen[current_seed] = period
-            current_seed = (self.a * current_seed + self.c) % self.m
-            period += 1
-        return period
+   
 
 # Clase congruencia Lineal
 class LinealCongruence(Congruences):
@@ -59,6 +48,11 @@ class LinealCongruence(Congruences):
         ri=self.xo_seed / (self.m-1)
         ri_trucated =math.trunc(ri * 10**5) / 10**5
         return  ri_trucated
+    
+    # Método auxiliar: calcula la siguiente semilla SIN alterar xo_seed
+    def _next_seed(self, seed):
+        return (self.a * seed + self.c) % self.m 
+    
     
 
     # Valida si los parametros cumplen con el teorema de Hull-Dobell
@@ -87,16 +81,53 @@ class LinealCongruence(Congruences):
             cond3 = a_minus_1 % 4 == 0
 
         return cond1 and cond2 and cond3
+  
+         
+    # Detecta el período con Floyd, limitado por max_steps.
+    # Si Hull-Dobell se cumple, devuelve m directamente.
+    # Si no cumple y se exceden max_steps, devuelve un estimado.
+        
+    def get_period(self, max_steps=10**6):
+        if self.hull_dobell_validation():
+            return self.m  # periodo máximo garantizado
+        start_seed = self.xo_seed
+        tortoise = self._next_seed(start_seed)
+        hare = self._next_seed(self._next_seed(start_seed))
+
+        steps = 0
+        while tortoise != hare and steps < max_steps:
+            tortoise = self._next_seed(tortoise)
+            hare = self._next_seed(self._next_seed(hare))
+            steps += 1
+
+        if steps >= max_steps:
+            # En vez de devolver un string, devolvemos el límite como int
+            return max_steps
+
+        # Colisión → calcular periodo exacto
+        mu = 0
+        tortoise = start_seed
+        while tortoise != hare:
+            tortoise = self._next_seed(tortoise)
+            hare = self._next_seed(hare)
+            mu += 1
+
+        lam = 1
+        hare = self._next_seed(tortoise)
+        while tortoise != hare:
+            hare = self._next_seed(hare)
+            lam += 1
+
+        return lam
+
     
 # Clase de congruencia Aditiva
 class AditiveCongruence(LinealCongruence):
     
     def __init__(self, xo_seed,c, g):
         super().__init__(xo_seed,0, c, g)
-        self.a = 1
-        self.c = c
-    
-    
+       
+   
     #Valida si los parametros cumplen con el teorema de Hull-Dobell aditive=o
     def hull_dobell_validation(self):
         #verifica que c y m sean primos relativos
@@ -107,9 +138,7 @@ class AditiveCongruence(LinealCongruence):
 class MultipyCongruence(LinealCongruence):
     
     def __init__(self, xo_seed,k, g):
-        super().__init__(xo_seed, k, 0, g)
-        self.c=0
-    
+        super().__init__(xo_seed, k, 0, g)    
     
     #Valida si los parametros cumplen con el teorema de Hull-Dobell aditive=o
     def hull_dobell_validation(self):

@@ -1,4 +1,4 @@
-from generators.congruences.Congruences import LinealCongruence
+from generators.Congruences import LinealCongruence
 
 lcg = LinealCongruence(xo_seed=1,k=1, c=3, g=60)  # Ejemplo de inicialización
 
