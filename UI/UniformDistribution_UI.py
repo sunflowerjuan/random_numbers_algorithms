@@ -68,9 +68,10 @@ class UniformDistributionUI:
         self.table.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
 
     def _setup_plot(self):
-        self.fig = Figure(figsize=(5, 4), dpi=100)
+        # Solo un gráfico: histograma
+        self.fig = Figure(figsize=(6, 4), dpi=100)
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_title("Dispersión de números uniformes")
+        self.ax.set_title("Histograma de frecuencias")
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
@@ -107,12 +108,13 @@ class UniformDistributionUI:
         self._plot_sequence()
 
     def _plot_sequence(self):
-        """Dibuja dispersión de los valores Ni."""
+        """Dibuja histograma de los valores Ni."""
         self.ax.clear()
-        self.ax.scatter(range(len(self.n_values)), self.n_values, c="blue", marker=".")
-        self.ax.set_title("Dispersión de números uniformes")
-        self.ax.set_xlabel("Índice")
-        self.ax.set_ylabel("Valor Ni")
+        self.ax.hist(self.n_values, bins=20, density=True, alpha=0.7,
+                    color="green", edgecolor="black")
+        self.ax.set_title("Histograma de frecuencias")
+        self.ax.set_xlabel("Valores Ni")
+        self.ax.set_ylabel("Densidad")
         self.ax.grid(True)
         self.canvas.draw()
 

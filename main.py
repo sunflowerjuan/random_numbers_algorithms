@@ -1,4 +1,4 @@
-from UI.NormalDistribution_UI import run_app
+from UI.UniformDistribution_UI import run_app
 
 if __name__ == "__main__":
     run_app()
