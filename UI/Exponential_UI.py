@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
-from ExponentialDistribution import ExponentialDistribution
+from distributions.ExponentialDistribution import ExponentialDistribution
 
 
 class ExponentialApp:
@@ -119,7 +119,12 @@ class ExponentialApp:
             messagebox.showinfo("Éxito", f"Datos exportados a {file_path}")
 
 
+
+def run_app():
+  root = tk.Tk()
+  app = ExponentialApp(root)
+  root.mainloop()
+
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = ExponentialApp(root)
-    root.mainloop()
+    run_app()

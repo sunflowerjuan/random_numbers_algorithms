@@ -7,7 +7,9 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csv
 
-from Congruences import LinealCongruence, AditiveCongruence, MultipyCongruence
+from generators.Congruences import LinealCongruence, AditiveCongruence, MultipyCongruence
+from utils.export_utils import export_sequence
+
 
 
 class CongruenceUI:
@@ -208,31 +210,19 @@ class CongruenceUI:
             messagebox.showerror("Error", str(e))
 
     def export(self):
-        """Exporta secuencia a archivo .txt o .csv."""
+        """Exporta la secuencia a CSV."""
         if not self.sequence:
             messagebox.showerror("Error", "Primero genere una secuencia.")
             return
 
-        filetypes = [("Texto", "*.txt"), ("CSV", "*.csv")]
-        filepath = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=filetypes)
-        if not filepath:
-            return
-
-        if filepath.endswith(".txt"):
-            with open(filepath, "w") as f:
-                for xi, ri in zip(self.x_values, self.sequence):
-                    f.write(f"{xi}, {ri}\n")
-        elif filepath.endswith(".csv"):
-            with open(filepath, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Xi", "Ri"])
-                for xi, ri in zip(self.x_values, self.sequence):
-                    writer.writerow([xi, ri])
-
-        messagebox.showinfo("Exportación", f"Secuencia exportada en {filepath}")
+        export_sequence(x_values=self.x_values, r_values=self.sequence,algorithm_name="Congruences")
 
 
-if __name__ == "__main__":
+def run_app():
     root = tk.Tk()
     app = CongruenceUI(root)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    run_app()
