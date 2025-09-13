@@ -7,6 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from generators.HalfSquares import HalfSquares 
 from utils.export_utils import export_sequence
+from UI.TestUI import TestUI  # importa tu TestUI
 
 
 class HalfSquaresUI:
@@ -114,6 +115,10 @@ class HalfSquaresUI:
 
         self._plot_sequence()
 
+        # --- Abrir ventana de pruebas ---
+        test_win = tk.Toplevel(self.root)
+        TestUI(test_win, self.sequence)
+
     def _plot_sequence(self):
         """Dibuja dispersión de la secuencia en matplotlib."""
         self.ax.clear()
@@ -130,7 +135,7 @@ class HalfSquaresUI:
             messagebox.showerror("Error", "Primero genere una secuencia.")
             return
 
-        export_sequence(x_values=self.seeds, r_values=self.sequence,algorithm_name="HalfSquares")
+        export_sequence(x_values=self.seeds, r_values=self.sequence, algorithm_name="HalfSquares")
 
 
 def run_app():

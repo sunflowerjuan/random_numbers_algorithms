@@ -9,7 +9,7 @@ import csv
 
 from generators.Congruences import LinealCongruence, AditiveCongruence, MultipyCongruence
 from utils.export_utils import export_sequence
-
+from UI.TestUI import TestUI
 
 
 class CongruenceUI:
@@ -206,6 +206,11 @@ class CongruenceUI:
             self._validate_hull_dobell(generator, n)
             self._fill_table_and_sequence(generator, n)
             self._plot_sequence()
+           
+           
+           # Abrir ventana de pruebas
+            test_win = tk.Toplevel(self.root)
+            TestUI(test_win, self.sequence)
         except ValueError as e:
             messagebox.showerror("Error", str(e))
 
@@ -226,3 +231,7 @@ def run_app():
 
 if __name__ == "__main__":
     run_app()
+
+
+
+
