@@ -1,13 +1,4 @@
-from generators.Congruences import LinealCongruence
+from UI.Congruences_UI import run_app
 
-lcg = LinealCongruence(xo_seed=1,k=1, c=3, g=60)  # Ejemplo de inicialización
-
-lcg.a=1103515245
-lcg.c=12345
-
-
-print("Hull-Dobell Validation:", lcg.hull_dobell_validation())
-
-n = 10000000
-sequence = lcg.generate_sequence(n)
-print(f"Generated sequence of {n} numbers:", sequence)
+if __name__ == "__main__":
+    run_app()
