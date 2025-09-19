@@ -75,7 +75,9 @@ class CongruenceUI:
     def _setup_buttons(self):
         """Botones de generar y exportar."""
         tk.Button(self.left_frame, text="Generar", command=self.generate).grid(row=7, column=0, pady=10)
-        tk.Button(self.left_frame, text="Exportar", command=self.export).grid(row=7, column=1, pady=10)
+        self.export_button = tk.Button(self.left_frame, text="Exportar", command=self.export, state="disabled")
+        self.export_button.grid(row=7, column=1, pady=10)
+
 
     def _setup_table(self):
         """Tabla para mostrar resultados generados."""
@@ -206,13 +208,20 @@ class CongruenceUI:
             self._validate_hull_dobell(generator, n)
             self._fill_table_and_sequence(generator, n)
             self._plot_sequence()
-           
-           
-           # Abrir ventana de pruebas
-            test_win = tk.Toplevel(self.root)
-            TestUI(test_win, self.sequence)
+
+            # Abrir ventana de pruebas (modal)
+            test_ui = TestUI(self.root, self.sequence, parent_ui=self)
+
+            # Habilitar o deshabilitar exportar según resultado de pruebas
+            if test_ui.overall_passed:
+                self.export_button.config(state="normal")
+            else:
+                self.export_button.config(state="disabled")
+
         except ValueError as e:
             messagebox.showerror("Error", str(e))
+            self.export_button.config(state="disabled")
+
 
     def export(self):
         """Exporta la secuencia a CSV."""

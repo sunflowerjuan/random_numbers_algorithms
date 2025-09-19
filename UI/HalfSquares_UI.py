@@ -115,9 +115,9 @@ class HalfSquaresUI:
 
         self._plot_sequence()
 
-        # --- Abrir ventana de pruebas ---
-        test_win = tk.Toplevel(self.root)
-        TestUI(test_win, self.sequence)
+     # --- Abrir ventana de pruebas ---
+        TestUI(self.root, self.sequence, parent_ui=self)
+
 
     def _plot_sequence(self):
         """Dibuja dispersión de la secuencia en matplotlib."""
