@@ -244,25 +244,34 @@ class ChiSquareTest(RandomTest):
         return passed, chi2_stat, chi2_crit
 
 
-# 4. Prueba de Kolmogorov-Smirnov
+# 4. Prueba de Kolmogorov-Smirnov con Sturges
 class KolmogorovSmirnovTest(RandomTest):
     def run(self, sequence):
         n = len(sequence)
-        sequence = np.sort(sequence)
-        fn = np.arange(1, n + 1) / n
-        f_theoretical = sequence
-        diffs = np.abs(fn - f_theoretical)
-        d_max = np.max(diffs)
 
-        if n > 35:
-            c_alpha = {0.10: 1.22, 0.05: 1.36, 0.01: 1.63}
-            c = c_alpha.get(self.error, 1.36)
-            d_alpha = c / np.sqrt(n)
-        else:
-            d_alpha = kstwo.ppf(1 - self.error, n) / n
+        # Número de intervalos por ley de Sturges
+        k = int(1 + 3.322 * math.log10(n))
+        intervals = np.linspace(0, 1, k + 1)
+
+        # Frecuencias observadas
+        fo, _ = np.histogram(sequence, bins=intervals)
+
+        # Frecuencias acumuladas observadas
+        fo_acum = np.cumsum(fo) / n
+
+        # Frecuencias esperadas (uniformes)
+        fe = np.full(k, n / k)
+        fe_acum = np.cumsum(fe) / n
+
+        # Estadístico KS (máx diferencia absoluta)
+        d_max = np.max(np.abs(fo_acum - fe_acum))
+
+        # Valor crítico con distribución KS
+        d_alpha = kstwo.ppf(1 - self.error, n) / n
 
         passed = d_max < d_alpha
         return passed, d_max, d_alpha
+
 
 
 # 5. Prueba de Poker
