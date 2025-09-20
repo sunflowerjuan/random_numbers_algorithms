@@ -12,15 +12,15 @@ from utils.export_utils import export_sequence
 from UI.TestUI import TestUI
 
 
-class CongruenceUI:
+class CongruenceUI(tk.Toplevel):
     """
     Interfaz gráfica para generar y visualizar números pseudoaleatorios
     usando generadores congruenciales (lineal, aditivo, multiplicativo).
     """
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Generadores de Congruencias")
-        self.root.geometry("1000x600")
+    def __init__(self, parent,parent_ui=None):
+        super().__init__(parent)
+        self.title("Generadores de Congruencias")
+        self.geometry("1000x600")
 
         self.sequence = []
         self.x_values = []
@@ -33,11 +33,16 @@ class CongruenceUI:
         self._setup_plot_area()
 
         self.update_fields()  # inicializa según el método por defecto
+                # Modal solo si el parent no es root
+        if parent is not None:
+            self.transient(parent)
+            self.grab_set()
+            parent.wait_window(self)
 
     # ========================= SETUP UI =========================
     def _setup_main_layout(self):
         """Crea la estructura de dos paneles: izquierda (inputs/tabla) y derecha (gráfica)."""
-        self.main_frame = tk.Frame(self.root)
+        self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
 
         self.left_frame = tk.Frame(self.main_frame)
@@ -210,7 +215,7 @@ class CongruenceUI:
             self._plot_sequence()
 
             # Abrir ventana de pruebas (modal)
-            test_ui = TestUI(self.root, self.sequence, parent_ui=self)
+            test_ui = TestUI(self, self.sequence, parent_ui=self)
 
             # Habilitar o deshabilitar exportar según resultado de pruebas
             if test_ui.overall_passed:

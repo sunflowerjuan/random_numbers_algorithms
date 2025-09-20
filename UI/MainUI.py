@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
+from UI.Congruences_UI import CongruenceUI
 from UI.FileTestUI import FileTestUI
 
 
@@ -91,8 +92,9 @@ class MainUI(tk.Tk):
         self._clear_content()
         tk.Label(self.content_frame, text="Generadores", font=("Arial", 18, "bold"), bg="white").pack(pady=15)
 
-        tk.Button(self.content_frame, text="Lineales", width=20, height=2,
-                  command=lambda: self._selected("Generador Lineal")).pack(pady=10)
+        tk.Button(self.content_frame, text="Congruencias", width=20, height=2,
+                  command=lambda: CongruenceUI(self)).pack(pady=10)
+
         tk.Button(self.content_frame, text="Cuadrados Medios", width=20, height=2,
                   command=lambda: self._selected("Generador de Cuadrados Medios")).pack(pady=10)
 
@@ -106,7 +108,7 @@ class MainUI(tk.Tk):
 
     def _selected(self, option):
         messagebox.showinfo("Selección", f"Opción seleccionada: {option}")
-
+        
 
 def run_app():
     app = MainUI()
