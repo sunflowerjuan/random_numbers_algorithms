@@ -25,7 +25,7 @@ class NormalDistribution:
         self.n = n
         self.seed = seed
         # generador de Ri congruencial lineal con parametros para generar minimo 1 millon de numeros
-        self.lcg = LinealCongruence(xo_seed=self.seed, k=551757622, c=12345, g=31)  # Ejemplo de inicialización
+        self.lcg = LinealCongruence(xo_seed=self.seed, k=551757622, c=12345, g=31)
 
     # Genera los numeros Ni bajo una distribucion normal usando el metodo de Box-Muller
     def generate_normal(self):

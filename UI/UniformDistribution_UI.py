@@ -9,41 +9,54 @@ from distributions.Distributions import UniformDistribution
 from utils.export_utils import export_sequence
 
 
-class UniformDistributionUI:
+class UniformDistributionUI(tk.Toplevel):
     """
     Interfaz gráfica para generar números con distribución uniforme
     a partir de un generador congruencial lineal.
     """
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Generador - Distribución Uniforme")
-        self.root.geometry("1000x600")
+    def __init__(self, parent,parent_ui=None):
+        super().__init__(parent)
+        self.title("Generador - Distribución Uniforme")
+        self.geometry("1000x600")
 
+        # Secuencias y valores
         self.sequence = []
-        self.r_values = []  # valores Ri (0,1)
-        self.n_values = []  # valores Ni (a,b)
+        self.r_values = []  # valores Ri (0,1) generados con el LCG
+        self.n_values = []  # valores Ni (a,b) transformados a la distribución uniforme
 
+        # Configuración de la interfaz
         self._setup_layout()
         self._setup_inputs()
         self._setup_buttons()
         self._setup_table()
         self._setup_plot()
 
+        # Manejo de ventana modal
+        if parent is not None:
+            self.transient(parent)
+            self.grab_set()
+            parent.wait_window(self)
+
     # ========================= UI =========================
     def _setup_layout(self):
-        self.main_frame = tk.Frame(self.root)
+        # Marco principal
+        self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
 
+        # Panel izquierdo (entradas, tabla, botones)
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
+        # Panel derecho (gráfico)
         self.right_frame = tk.Frame(self.main_frame)
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
+        # Distribución de columnas
         self.main_frame.columnconfigure(0, weight=1)
         self.main_frame.columnconfigure(1, weight=2)
 
     def _setup_inputs(self):
+        # Entradas de parámetros
         labels = ["Seed (X0)", "Cantidad (n)", "a", "b"]
         self.entries = {}
 
@@ -54,10 +67,12 @@ class UniformDistributionUI:
             self.entries[lbl] = entry
 
     def _setup_buttons(self):
+        # Botones para generar y exportar secuencia
         tk.Button(self.left_frame, text="Generar", command=self.generate).grid(row=4, column=0, pady=10)
         tk.Button(self.left_frame, text="Exportar", command=self.export).grid(row=4, column=1, pady=10)
 
     def _setup_table(self):
+        # Tabla para mostrar los valores generados
         self.table = ttk.Treeview(self.left_frame, columns=("#", "Ri", "Ni"), show="headings", height=15)
         self.table.heading("#", text="#")
         self.table.heading("Ri", text="Ri")
@@ -68,7 +83,7 @@ class UniformDistributionUI:
         self.table.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
 
     def _setup_plot(self):
-        # Solo un gráfico: histograma
+        # Gráfico: histograma
         self.fig = Figure(figsize=(6, 4), dpi=100)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title("Histograma de frecuencias")
@@ -77,6 +92,7 @@ class UniformDistributionUI:
 
     # ========================= LÓGICA =========================
     def generate(self):
+        """Genera los valores Ri y Ni y los muestra en la tabla y el histograma."""
         try:
             seed = int(self.entries["Seed (X0)"].get())
             n = int(self.entries["Cantidad (n)"].get())
@@ -86,6 +102,7 @@ class UniformDistributionUI:
             messagebox.showerror("Error", "Los parámetros deben ser numéricos.")
             return
 
+        # Validaciones de parámetros
         if n <= 0:
             messagebox.showerror("Error", "n debe ser mayor a 0.")
             return
@@ -94,17 +111,21 @@ class UniformDistributionUI:
             messagebox.showerror("Error", "Se requiere que b > a.")
             return
 
+        # Generación de valores con el generador uniforme
         generator = UniformDistribution(seed, n, a, b)
-        self.r_values = generator.lcg.generate_sequence(n)
-        self.n_values = generator.generate_uniform()
+        self.r_values = generator.lcg.generate_sequence(n)   # números Ri en (0,1)
+        self.n_values = generator.generate_uniform()         # números Ni en (a,b)
 
+        # Limpiar secuencia y tabla
         self.sequence.clear()
         for row in self.table.get_children():
             self.table.delete(row)
 
+        # Insertar nuevos datos en la tabla
         for i, (ri, ni) in enumerate(zip(self.r_values, self.n_values)):
             self.table.insert("", "end", values=(i + 1, f"{ri:.5f}", f"{ni:.5f}"))
 
+        # Dibujar gráfico
         self._plot_sequence()
 
     def _plot_sequence(self):
@@ -119,6 +140,7 @@ class UniformDistributionUI:
         self.canvas.draw()
 
     def export(self):
+        """Exporta la secuencia generada a un archivo."""
         if not self.n_values:
             messagebox.showerror("Error", "Primero genere una secuencia.")
             return

@@ -8,10 +8,10 @@ import numpy as np
 from distributions.ExponentialDistribution import ExponentialDistribution
 
 
-class ExponentialApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Simulación Distribución Exponencial")
+class ExponentialApp(tk.Toplevel):
+    def __init__(self, parent, parent_ui=None):
+        super().__init__(parent)    
+        self.title("Simulación Distribución Exponencial")
 
         # Variables de entrada
         self.seed_var = tk.IntVar()
@@ -22,10 +22,14 @@ class ExponentialApp:
 
         # Layout
         self.create_widgets()
+        if parent is not None:
+            self.transient(parent)
+            self.grab_set()
+            parent.wait_window(self)
 
     def create_widgets(self):
         # Frame izquierdo: entradas y botones
-        frame_left = tk.Frame(self.root, padx=10, pady=10)
+        frame_left = tk.Frame(self, padx=10, pady=10)
         frame_left.pack(side=tk.LEFT, fill=tk.Y)
 
         tk.Label(frame_left, text="Semilla:").pack(anchor="w")
@@ -48,7 +52,7 @@ class ExponentialApp:
         self.tree.pack(pady=10, fill="both", expand=True)
 
         # Frame derecho: gráfica
-        self.frame_right = tk.Frame(self.root, padx=10, pady=10)
+        self.frame_right = tk.Frame(self, padx=10, pady=10)
         self.frame_right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
     def run_simulation(self):
