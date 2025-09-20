@@ -1,0 +1,98 @@
+@startuml
+skinparam style strictuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+package "UI" {
+    class MainUI {
+        +_show_distributions()
+        +_show_generators()
+        +_show_tests()
+    }
+
+    class UniformDistributionUI
+    class NormalDistributionUI
+    class CongruenceUI
+    class HalfSquaresUI
+    class FileTestUI
+}
+
+package "Distribuciones" {
+    class UniformDistribution {
+        +generate_uniform()
+        -lcg : LinealCongruence
+    }
+
+    class NormalDistribution {
+        +generate_normal()
+        -lcg : LinealCongruence
+    }
+}
+
+package "Generadores" {
+    abstract class Congruences {
+        +generate_sequence()
+        +hull_dobell_validation()
+    }
+
+    class LinealCongruence
+    class AditiveCongruence
+    class MultipyCongruence
+    class HalfSquares
+}
+
+package "Pruebas" {
+    abstract class RandomTest {
+        +run()
+    }
+
+    class MeanTest
+    class VarianceTest
+    class ChiSquareTest
+    class KolmogorovSmirnovTest
+    class PokerTest
+    class RunsTest
+
+    class RandomTestFacade {
+        +run_all()
+        +run_subset()
+    }
+}
+
+' ==== Relaciones ====
+MainUI --> UniformDistributionUI
+MainUI --> NormalDistributionUI
+MainUI --> CongruenceUI
+MainUI --> HalfSquaresUI
+MainUI --> FileTestUI
+
+UniformDistributionUI --> UniformDistribution
+NormalDistributionUI --> NormalDistribution
+
+UniformDistribution --> LinealCongruence
+NormalDistribution --> LinealCongruence
+
+CongruenceUI --> LinealCongruence
+CongruenceUI --> AditiveCongruence
+CongruenceUI --> MultipyCongruence
+
+HalfSquaresUI --> HalfSquares
+
+FileTestUI --> RandomTestFacade
+RandomTestFacade --> MeanTest
+RandomTestFacade --> VarianceTest
+RandomTestFacade --> ChiSquareTest
+RandomTestFacade --> KolmogorovSmirnovTest
+RandomTestFacade --> PokerTest
+RandomTestFacade --> RunsTest
+
+Congruences <|-- LinealCongruence
+Congruences <|-- AditiveCongruence
+Congruences <|-- MultipyCongruence
+RandomTest <|-- MeanTest
+RandomTest <|-- VarianceTest
+RandomTest <|-- ChiSquareTest
+RandomTest <|-- KolmogorovSmirnovTest
+RandomTest <|-- PokerTest
+RandomTest <|-- RunsTest
+@enduml
