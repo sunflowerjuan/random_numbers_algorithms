@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import csv
 import os
+import re
 from UI.TestUI import TestUI
 
 
@@ -91,7 +92,7 @@ class FileTestUI(tk.Toplevel):
         self._open_test_ui()
 
     def _load_file(self):
-        """Carga una secuencia desde archivo CSV o TXT, leyendo columna 'Ri'."""
+        """Carga una secuencia desde archivo CSV o TXT, intentando detectar delimitador y columna 'Ri'."""
         file_path = filedialog.askopenfilename(
             filetypes=[("Archivos de texto o CSV", "*.txt *.csv"), ("Todos los archivos", "*.*")]
         )
@@ -99,44 +100,153 @@ class FileTestUI(tk.Toplevel):
             return
 
         try:
-            sequence = []
-            with open(file_path, "r", newline="") as f:
-                reader = csv.reader(f)
+            # Leer una muestra para detectar dialecto
+            with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+                sample = f.read(2048)
+                f.seek(0)
 
-                # Leer encabezado
-                header = next(reader, None)
-                if not header:
-                    messagebox.showerror("Error", "El archivo está vacío.")
-                    return
-
-                # Buscar índice de columna 'Ri'
+                # Intentar detectar dialecto con Sniffer
+                delimiter = None
+                has_header = False
                 try:
-                    ri_index = header.index("Ri")
-                except ValueError:
-                    messagebox.showerror("Error", "No se encontró la columna 'Ri' en el archivo.")
-                    return
+                    sniffer = csv.Sniffer()
+                    dialect = sniffer.sniff(sample)
+                    delimiter = dialect.delimiter
+                    has_header = sniffer.has_header(sample)
+                except Exception:
+                    # fallback: probar delimitadores comunes
+                    for d in [",", ";", "\t", "|"]:
+                        f.seek(0)
+                        reader = csv.reader(f, delimiter=d)
+                        header = next(reader, None)
+                        if header and any("ri" in (h or "").lower() for h in header):
+                            delimiter = d
+                            has_header = True
+                            break
+                    # si no encontramos un delimitador, asumimos coma y seguiremos con heurística
+                    if delimiter is None:
+                        delimiter = ","
+                        f.seek(0)
+                        has_header = csv.Sniffer().has_header(sample) if sample.strip() else False
 
-                # Leer valores de esa columna
+                # Leer con el delimitador elegido
+                f.seek(0)
+                reader = csv.reader(f, delimiter=delimiter)
+
+                # Si detectamos encabezado, obtenerlo; si no, trabajamos las filas como datos
+                header_row = None
+                rows = []
+
+                if has_header:
+                    header_row = next(reader, None)
+
                 for row in reader:
-                    if len(row) <= ri_index:
+                    # Ignorar filas vacías
+                    if not row or all(not cell.strip() for cell in row):
                         continue
-                    try:
-                        ri = float(row[ri_index])
-                        if not (0 <= ri <= 1):
-                            raise ValueError(f"VALORES FUERA DE RANGO Ri")
-                        sequence.append(ri)
-                    except ValueError as e:
-                        raise ValueError(f"Valor inválido en la fila {row}: {e}")
+                    rows.append(row)
+
+                # Si no hay filas obtenidas por csv (archivo con separadores por espacios), fallback a split por línea
+                if not rows:
+                    f.seek(0)
+                    raw_lines = [ln.strip() for ln in f.readlines() if ln.strip()]
+                    if header_row:
+                        # quitar la línea de encabezado del raw_lines
+                        if raw_lines:
+                            raw_lines = raw_lines[1:]
+                    rows = [ln.split() for ln in raw_lines if ln]
+
+                # Normalizar encabezados y buscar 'ri'
+                ri_index = None
+                if header_row:
+                    headers_norm = [re.sub(r"\W", "", (h or "")).lower() for h in header_row]
+                    # buscar coincidencia exacta o que contenga 'ri'
+                    for i, h in enumerate(headers_norm):
+                        if h == "ri" or h.endswith("ri") or "ri" == h:
+                            ri_index = i
+                            break
+                    if ri_index is None:
+                        for i, h in enumerate(headers_norm):
+                            if "ri" in h:
+                                ri_index = i
+                                break
+
+            # Si no detectamos por encabezado, intentar detectar la columna 'Ri' por contenido
+            def detect_ri_column(rows_list):
+                # calcular número máximo de columnas
+                max_cols = max((len(r) for r in rows_list), default=0)
+                if max_cols == 0:
+                    return None
+                scores = [0] * max_cols
+                totals = [0] * max_cols
+                for r in rows_list:
+                    for j in range(max_cols):
+                        if j < len(r):
+                            val = r[j].strip()
+                            if val == "":
+                                continue
+                            totals[j] += 1
+                            try:
+                                v = float(val)
+                                if 0 <= v <= 1:
+                                    scores[j] += 1
+                            except Exception:
+                                pass
+                # Elegir columna con mayor cantidad de valores válidos en [0,1]
+                best = max(range(max_cols), key=lambda j: (scores[j], totals[j]))
+                # Requerir al menos algún valor válido, preferentemente mayoría
+                if totals[best] == 0:
+                    return None
+                if scores[best] >= max(1, totals[best] * 0.5):
+                    return best
+                if scores[best] > 0:
+                    return best
+                return None
+
+            if ri_index is None:
+                ri_index = detect_ri_column(rows)
+
+            if ri_index is None:
+                raise ValueError("No se pudo detectar la columna 'Ri'. Asegúrate de que el archivo tenga un encabezado 'Ri' o una columna con valores en [0,1].")
+
+            # Extraer la columna detectada
+            sequence = []
+            for row in rows:
+                # Manejo de filas con una sola celda (posible separación por espacios)
+                if len(row) <= ri_index:
+                    # intentar split por espacios si la fila está en una sola celda
+                    if len(row) == 1:
+                        parts = row[0].strip().split()
+                        if len(parts) > ri_index:
+                            candidate = parts[ri_index]
+                        else:
+                            continue
+                    else:
+                        continue
+                else:
+                    candidate = row[ri_index]
+
+                candidate = candidate.strip()
+                if not candidate:
+                    continue
+                try:
+                    ri = float(candidate)
+                    if not (0 <= ri <= 1):
+                        # si está fuera de rango ignorarlo
+                        continue
+                    sequence.append(ri)
+                except Exception:
+                    # fila no numérica -> ignorar
+                    continue
 
             if not sequence:
-                messagebox.showerror("Error", "No se encontraron números válidos en la columna 'Ri'.")
-                return
+                raise ValueError("No se encontraron valores numéricos válidos en la columna detectada.")
 
-            # Guardar secuencia y archivo cargado
+            # Guardar estado y notificar al usuario
             self.sequence = sequence
             self.file_path = file_path
             self.file_label.config(text=f"Archivo cargado: {os.path.basename(file_path)}", fg="green")
-            messagebox.showinfo("Éxito", f"Archivo cargado con {len(sequence)} valores de la columna Ri.")
+            messagebox.showinfo("Éxito", f"Archivo cargado con {len(sequence)} valores en la columna Ri (índice detectado: {ri_index}).")
 
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
