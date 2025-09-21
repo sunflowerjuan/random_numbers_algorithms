@@ -81,6 +81,23 @@ En la consola de comandos
 
 ## FUNCIONALIDADES
 
+### Carga de parámetros desde archivo
+
+El sistema permite cargar automáticamente parámetros de los generadores y distribuciones desde un archivo **CSV** o **TXT** con encabezados.
+
+### Formato esperado del archivo
+
+El archivo debe contener en la primera fila los nombres de los parámetros y en las siguientes los valores.  
+Ejemplo de archivo `parametros.csv` para la distribucion Uniforme. El sistema solo cargara los parametros que coincidan con los estrictamente necesarios para el generador o distribucion :
+
+```csv
+Seed,n,a,b
+7,100,0,1
+13,50,10,20
+```
+
+Si existe mas de una fila de parametros, se abrirá un dialogo en donde podremos seleccionar la fila de parametros que deseemos. en la carpeta [params_examples](params_examples) hay una lista con ejemplos basicos de parametros para cada una de sus implementaciones
+
 ### Distribuciones
 
 1. **NORMAL**
@@ -206,3 +223,7 @@ En el siguiente diagrama se ve las clases y sus relaciones
 ## License
 
 This project is licensed under the MIT
+
+```
+
+```
