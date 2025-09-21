@@ -1,9 +1,10 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import matplotlib
 matplotlib.use("TkAgg")  
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import csv
 
 from distributions.Distributions import UniformDistribution
 from utils.export_utils import export_sequence
@@ -14,24 +15,29 @@ class UniformDistributionUI(tk.Toplevel):
     Interfaz gráfica para generar números con distribución uniforme
     a partir de un generador congruencial lineal.
     """
-    def __init__(self, parent,parent_ui=None):
+    def __init__(self, parent, parent_ui=None):
         super().__init__(parent)
         self.title("Generador - Distribución Uniforme")
         self.geometry("1000x600")
 
-        # Secuencias y valores
         self.sequence = []
-        self.r_values = []  # valores Ri (0,1) generados con el LCG
-        self.n_values = []  # valores Ni (a,b) transformados a la distribución uniforme
+        self.r_values = []  
+        self.n_values = []  
 
-        # Configuración de la interfaz
+        # Campos de entrada ↔ encabezados de archivo
+        self.field_map = {
+            "Seed (X0)": "seed",
+            "Cantidad (n)": "n",
+            "a": "a",
+            "b": "b"
+        }
+
         self._setup_layout()
         self._setup_inputs()
         self._setup_buttons()
         self._setup_table()
         self._setup_plot()
 
-        # Manejo de ventana modal
         if parent is not None:
             self.transient(parent)
             self.grab_set()
@@ -39,24 +45,19 @@ class UniformDistributionUI(tk.Toplevel):
 
     # ========================= UI =========================
     def _setup_layout(self):
-        # Marco principal
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
 
-        # Panel izquierdo (entradas, tabla, botones)
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Panel derecho (gráfico)
         self.right_frame = tk.Frame(self.main_frame)
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
-        # Distribución de columnas
         self.main_frame.columnconfigure(0, weight=1)
         self.main_frame.columnconfigure(1, weight=2)
 
     def _setup_inputs(self):
-        # Entradas de parámetros
         labels = ["Seed (X0)", "Cantidad (n)", "a", "b"]
         self.entries = {}
 
@@ -67,12 +68,11 @@ class UniformDistributionUI(tk.Toplevel):
             self.entries[lbl] = entry
 
     def _setup_buttons(self):
-        # Botones para generar y exportar secuencia
         tk.Button(self.left_frame, text="Generar", command=self.generate).grid(row=4, column=0, pady=10)
         tk.Button(self.left_frame, text="Exportar", command=self.export).grid(row=4, column=1, pady=10)
+        tk.Button(self.left_frame, text="Cargar Parámetros", command=self.load_params).grid(row=5, column=0, columnspan=2, pady=10)
 
     def _setup_table(self):
-        # Tabla para mostrar los valores generados
         self.table = ttk.Treeview(self.left_frame, columns=("#", "Ri", "Ni"), show="headings", height=15)
         self.table.heading("#", text="#")
         self.table.heading("Ri", text="Ri")
@@ -80,10 +80,9 @@ class UniformDistributionUI(tk.Toplevel):
         self.table.column("#", width=40, anchor="center")
         self.table.column("Ri", width=80, anchor="center")
         self.table.column("Ni", width=100, anchor="center")
-        self.table.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
+        self.table.grid(row=6, column=0, columnspan=2, padx=5, pady=10)
 
     def _setup_plot(self):
-        # Gráfico: histograma
         self.fig = Figure(figsize=(6, 4), dpi=100)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title("Histograma de frecuencias")
@@ -91,8 +90,71 @@ class UniformDistributionUI(tk.Toplevel):
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
     # ========================= LÓGICA =========================
+    def load_params(self):
+        """Cargar parámetros desde un archivo CSV/TXT con encabezados."""
+        file_path = filedialog.askopenfilename(
+            title="Seleccionar archivo de parámetros",
+            filetypes=[("Archivos CSV/TXT", "*.csv *.txt"), ("Todos", "*.*")]
+        )
+        if not file_path:
+            return
+
+        try:
+            with open(file_path, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+
+            if not rows:
+                messagebox.showerror("Error", "El archivo no contiene datos.")
+                return
+
+            if len(rows) > 1:
+                options = [f"Fila {i+1}: {row}" for i, row in enumerate(rows)]
+                choice = self.ask_param_choice(options)
+                if choice is None:
+                    return
+                row = rows[choice]
+            else:
+                row = rows[0]
+
+            # Llenar los campos
+            for label, key in self.field_map.items():
+                if key in row and row[key].strip():
+                    self.entries[label].delete(0, tk.END)
+                    self.entries[label].insert(0, row[key])
+
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron cargar parámetros: {e}")
+
+    def ask_param_choice(self, options):
+        dialog = tk.Toplevel(self)
+        dialog.title("Seleccionar configuración")
+        dialog.geometry("400x300")
+        dialog.transient(self)
+        dialog.grab_set()
+
+        label = tk.Label(dialog, text="Seleccione una configuración de parámetros:")
+        label.pack(pady=5)
+
+        listbox = tk.Listbox(dialog, height=10)
+        for opt in options:
+            listbox.insert(tk.END, opt)
+        listbox.pack(fill="both", expand=True, padx=10, pady=5)
+
+        chosen = {"index": None}
+
+        def confirm():
+            selection = listbox.curselection()
+            if selection:
+                chosen["index"] = selection[0]
+                dialog.destroy()
+
+        tk.Button(dialog, text="Aceptar", command=confirm).pack(pady=10)
+
+        self.wait_window(dialog)
+        return chosen["index"]
+
     def generate(self):
-        """Genera los valores Ri y Ni y los muestra en la tabla y el histograma."""
         try:
             seed = int(self.entries["Seed (X0)"].get())
             n = int(self.entries["Cantidad (n)"].get())
@@ -102,34 +164,27 @@ class UniformDistributionUI(tk.Toplevel):
             messagebox.showerror("Error", "Los parámetros deben ser numéricos.")
             return
 
-        # Validaciones de parámetros
         if n <= 0:
             messagebox.showerror("Error", "n debe ser mayor a 0.")
             return
-
         if b <= a:
             messagebox.showerror("Error", "Se requiere que b > a.")
             return
 
-        # Generación de valores con el generador uniforme
         generator = UniformDistribution(seed, n, a, b)
-        self.r_values = generator.lcg.generate_sequence(n)   # números Ri en (0,1)
-        self.n_values = generator.generate_uniform()         # números Ni en (a,b)
+        self.r_values = generator.lcg.generate_sequence(n)
+        self.n_values = generator.generate_uniform()
 
-        # Limpiar secuencia y tabla
         self.sequence.clear()
         for row in self.table.get_children():
             self.table.delete(row)
 
-        # Insertar nuevos datos en la tabla
         for i, (ri, ni) in enumerate(zip(self.r_values, self.n_values)):
             self.table.insert("", "end", values=(i + 1, f"{ri:.5f}", f"{ni:.5f}"))
 
-        # Dibujar gráfico
         self._plot_sequence()
 
     def _plot_sequence(self):
-        """Dibuja histograma de los valores Ni."""
         self.ax.clear()
         self.ax.hist(self.n_values, bins=20, density=True, alpha=0.7,
                     color="green", edgecolor="black")
@@ -140,7 +195,6 @@ class UniformDistributionUI(tk.Toplevel):
         self.canvas.draw()
 
     def export(self):
-        """Exporta la secuencia generada a un archivo."""
         if not self.n_values:
             messagebox.showerror("Error", "Primero genere una secuencia.")
             return

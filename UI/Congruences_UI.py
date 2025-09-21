@@ -1,34 +1,28 @@
 import math
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog,simpledialog
 import matplotlib
 matplotlib.use("TkAgg")  # Se define el backend de Matplotlib para usarlo con Tkinter
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csv
 
-# Importación de clases de generadores y utilidades de exportación
 from generators.Congruences import LinealCongruence, AditiveCongruence, MultipyCongruence
 from utils.export_utils import export_sequence
 from UI.TestUI import TestUI
+from utils.param_loader import load_param_file, filter_params
 
 
 class CongruenceUI(tk.Toplevel):
-    """
-    Interfaz gráfica para generar y visualizar números pseudoaleatorios
-    usando generadores congruenciales (lineal, aditivo, multiplicativo).
-    """
-
     def __init__(self, parent, parent_ui=None):
         super().__init__(parent)
         self.title("Generadores de Congruencias")
         self.geometry("1000x600")
 
-        # Secuencias y valores Xi
         self.sequence = []
         self.x_values = []
+        self.param_sets = []  # Lista de parámetros cargados desde archivo
 
-        # Configuración de la interfaz
         self._setup_main_layout()
         self._setup_inputs()
         self._setup_buttons()
@@ -36,10 +30,8 @@ class CongruenceUI(tk.Toplevel):
         self._setup_status_label()
         self._setup_plot_area()
 
-        # Inicializa campos según el método por defecto (lineal)
         self.update_fields()
 
-        # Hace la ventana modal si el parent no es root
         if parent is not None:
             self.transient(parent)
             self.grab_set()
@@ -47,29 +39,22 @@ class CongruenceUI(tk.Toplevel):
 
     # ========================= SETUP UI =========================
     def _setup_main_layout(self):
-        """Crea la estructura principal con dos paneles: 
-        izquierda (inputs/tabla) y derecha (gráfica)."""
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
 
-        # Panel izquierdo
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Panel derecho
         self.right_frame = tk.Frame(self.main_frame)
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
-        # Configuración de tamaños relativos
         self.main_frame.columnconfigure(0, weight=1)
         self.main_frame.columnconfigure(1, weight=2)
 
     def _setup_inputs(self):
-        """Crea los campos de entrada y menú para seleccionar el método de generación."""
         self.entries = {}
         params = ["Seed", "k", "c", "g", "n"]
 
-        # Selector de método
         tk.Label(self.left_frame, text="Método").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.method_var = tk.StringVar(value="Lineal")
         methods = ["Lineal", "Aditivo", "Multiplicativo"]
@@ -80,7 +65,6 @@ class CongruenceUI(tk.Toplevel):
         self.method_menu.grid(row=0, column=1, padx=5, pady=5)
         self.method_menu.bind("<<ComboboxSelected>>", self.update_fields)
 
-        # Entradas de parámetros numéricos
         for i, p in enumerate(params):
             tk.Label(self.left_frame, text=p).grid(row=i + 1, column=0, padx=5, pady=5, sticky="w")
             entry = tk.Entry(self.left_frame)
@@ -88,32 +72,123 @@ class CongruenceUI(tk.Toplevel):
             self.entries[p] = entry
 
     def _setup_buttons(self):
-        """Crea los botones de acción (generar y exportar)."""
         tk.Button(self.left_frame, text="Generar", command=self.generate).grid(row=7, column=0, pady=10)
         self.export_button = tk.Button(self.left_frame, text="Exportar", command=self.export, state="disabled")
         self.export_button.grid(row=7, column=1, pady=10)
 
+        # Botón para cargar archivo de parámetros
+        tk.Button(self.left_frame, text="Cargar Parametros", command=self.load_file).grid(row=7, column=2, pady=10)
+
     def _setup_table(self):
-        """Crea una tabla para mostrar los valores generados Xi y Ri."""
         self.table = ttk.Treeview(self.left_frame, columns=("#", "Xi", "Ri"), show="headings", height=10)
-        self.table.heading("#", text="#")   # Número de iteración
-        self.table.heading("Xi", text="Xi") # Valor Xi
-        self.table.heading("Ri", text="Ri") # Valor Ri normalizado
+        self.table.heading("#", text="#")
+        self.table.heading("Xi", text="Xi")
+        self.table.heading("Ri", text="Ri")
         self.table.column("#", width=30, anchor="center")
-        self.table.grid(row=8, column=0, columnspan=3, padx=5, pady=10)
+        self.table.grid(row=8, column=0, columnspan=4, padx=5, pady=10)
 
     def _setup_status_label(self):
-        """Etiqueta para mostrar el estado de la validación de Hull-Dobell."""
         self.hull_label = tk.Label(self.left_frame, text="Estado Hull-Dobell: ---", fg="blue")
-        self.hull_label.grid(row=9, column=0, columnspan=3, pady=5)
+        self.hull_label.grid(row=9, column=0, columnspan=4, pady=5)
 
     def _setup_plot_area(self):
-        """Área de gráfico Matplotlib para graficar la dispersión de resultados."""
         self.fig = Figure(figsize=(5, 4), dpi=100)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title("Dispersión de números pseudoaleatorios")
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.right_frame)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+    # ========================= PARAMETROS DESDE ARCHIVO =========================
+    def load_file(self):
+        filepath = filedialog.askopenfilename(
+            title="Seleccionar archivo de parámetros",
+            filetypes=[("CSV o TXT", "*.csv *.txt")]
+        )
+        if not filepath:
+            return
+
+        try:
+             # Cargar todas las filas del archivo
+            rows = load_param_file(filepath)
+            # Filtrar solo columnas necesarias
+            self.param_sets = [filter_params(row, ["Seed","k","c","g","n"]) for row in rows]
+
+            if not self.param_sets:
+                raise ValueError("El archivo está vacío o no tiene parámetros válidos")
+
+            if len(self.param_sets) == 1:
+                self._fill_entries(self.param_sets[0])
+            else:
+                options = [f"Fila {i+1}: {row}" for i, row in enumerate(self.param_sets)]
+                choice = self.ask_param_choice(options)
+                if choice is not None:
+                    self._fill_entries(self.param_sets[choice])
+
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+            
+            
+    def ask_param_choice(self, options):
+        """Abre un cuadro para elegir una fila de parámetros"""
+        dialog = tk.Toplevel(self)
+        dialog.title("Seleccionar configuración")
+        dialog.geometry("400x300")
+        dialog.transient(self)
+        dialog.grab_set()
+
+        header_label = tk.Label(dialog, text="Seed,k,c,g,n", font=("Arial", 10, "bold"))
+        header_label.pack(pady=5)
+
+
+        listbox = tk.Listbox(dialog, height=10)
+        for opt in options:
+            listbox.insert(tk.END, opt)
+        listbox.pack(fill="both", expand=True, padx=10, pady=5)
+
+        chosen = {"index": None}
+
+        def confirm():
+            sel = listbox.curselection()
+            if sel:
+                chosen["index"] = sel[0]
+                dialog.destroy()
+
+        tk.Button(dialog, text="Aceptar", command=confirm).pack(pady=5)
+
+        dialog.wait_window()
+        return chosen["index"]
+
+    def _fill_entries(self, param_row):
+        """Llena los campos de entrada con una fila de parámetros"""
+        keys = ["Seed", "k", "c", "g", "n"]
+        for key in keys:
+            if key in param_row:
+                self.entries[key].delete(0, tk.END)
+                self.entries[key].insert(0, str(param_row[key]))
+
+        # Detecta el método según parámetros
+        seed = param_row.get("Seed", 0)
+        k = param_row.get("k", 0)
+        c = param_row.get("c", 0)
+        g = param_row.get("g", 0)
+        n = param_row.get("n", 0)
+
+        try:
+            if k == 0 and c != 0:
+                self.method_var.set("Aditivo")
+            elif c == 0 and k != 0:
+                self.method_var.set("Multiplicativo")
+            elif k != 0 and c != 0:
+                self.method_var.set("Lineal")
+            else:
+                self.method_var.set("Lineal")  # fallback
+        except Exception:
+            self.method_var.set("Lineal")
+
+        self.update_fields()
+
+
 
     # ========================= LÓGICA =========================
     def update_fields(self, event=None):
@@ -161,16 +236,20 @@ class CongruenceUI(tk.Toplevel):
         return seed, k, c, g, n
 
     def _get_generator(self, seed, k, c, g):
-        """Devuelve el generador correspondiente al método seleccionado."""
-        method = self.method_var.get()
-        if method == "Lineal":
-            return LinealCongruence(seed, k, c, g)
-        elif method == "Aditivo":
+        """Devuelve el generador correspondiente según parámetros o menú"""
+        # Autodetección
+        if k == 0 and c != 0:
+            self.method_var.set("Aditivo")
             return AditiveCongruence(seed, c, g)
-        elif method == "Multiplicativo":
+        elif c == 0 and k != 0:
+            self.method_var.set("Multiplicativo")
             return MultipyCongruence(seed, k, g)
+        elif k != 0 and c != 0:
+            self.method_var.set("Lineal")
+            return LinealCongruence(seed, k, c, g)
         else:
-            raise ValueError("Método no válido")
+            raise ValueError("Parámetros inválidos: no se puede tener k=0 y c=0 al mismo tiempo")
+
 
     def _validate_hull_dobell(self, generator, n):
         """Valida las condiciones de Hull-Dobell y muestra el estado en la etiqueta."""
